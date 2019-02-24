@@ -110,8 +110,6 @@ class GenerateDaterangeCsv extends Command
                                                     $exclude_dates, 
                                                     $exclude_days_of_the_month);
 
-        $this->info(implode(',', $daterange));
-
         $csv = $this->csvRepository->generateCsv($daterange, 'd/m/Y');
 
         $this->info('CSV file written to /public/daterange/dates.csv');
