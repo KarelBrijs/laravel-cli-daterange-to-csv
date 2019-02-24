@@ -6,13 +6,14 @@ use App\Repositories\DaterangeRepository;
 use App\Repositories\CsvRepository;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Validator;
 
 class GenerateDaterangeCsv extends Command
 {
     /**
      * The name and signature of the console command.
      *
-     * php artisan generate:daterange-csv 01/01/2019 31/12/2019 --I=2 --ED=0 --ED=6 --EDFI=0 --EDFI=6 --EDT=25/12 --EDT=01/01 --EDOTM=5 --EDOTM=15 
+     * php artisan generate:daterange-csv 01/01/2019 31/12/2019 -I=2 --exclude_day=0 --exclude_day=6 --exclude_day_from_interval=0 --exclude_day_from_interval=6 --exclude_date=25/12 --exclude_date=01/01 --exclude_day_of_the_month=5 --exclude_day_of_the_month=15
      * php artisan generate:daterange-csv 01/01/2019 31/03/2019 --interval=2 --exclude_day=0 --exclude_day=6 --exclude_day_from_interval=0 --exclude_day_from_interval=6 --exclude_date=25/12 --exclude_date=01/01 --exclude_day_of_the_month=5 --exclude_day_of_the_month=15
      *
      * @var string
@@ -20,11 +21,11 @@ class GenerateDaterangeCsv extends Command
     protected $signature = 'generate:daterange-csv 
                             {startdate : The startdate of the daterange. } 
                             {enddate : The enddate of the daterange. } 
-                            {--I|interval=1 : Interval of days between dates (default: 1) }
-                            {--ED|exclude_day=* : The days that will be excluded from the results. Accepts integer from 0 (sunday) to 6 (saturday). }
-                            {--EDFI|exclude_day_from_interval=* : The days that will be excluded from the interval count. Accepts integer from 0 (sunday) to 6 (saturday). }
-                            {--EDT|exclude_date=* : The dates (dd/mm) that will be excluded from the results. }
-                            {--EDOTM|exclude_day_of_the_month=* : The nth-days of each month that will be excluded from the results. }';
+                            {--interval=1 : Interval of days between dates (default: 1) }
+                            {--exclude_day=* : The days that will be excluded from the results. Accepts integer from 0 (sunday) to 6 (saturday). }
+                            {--exclude_day_from_interval=* : The days that will be excluded from the interval count. Accepts integer from 0 (sunday) to 6 (saturday). }
+                            {--exclude_date=* : The dates (dd/mm) that will be excluded from the results. }
+                            {--exclude_day_of_the_month=* : The nth-days of each month that will be excluded from the results. }';
 
     /**
      * The console command description.
@@ -65,6 +66,33 @@ class GenerateDaterangeCsv extends Command
      */
     public function handle()
     {
+        $validator = Validator::make([
+            'startdate' => $this->argument('startdate'),
+            'enddate' => $this->argument('enddate'),
+            'interval' => (int)$this->option('interval'),
+            'exclude_days' => $this->option('exclude_day'),
+            'exclude_days_from_interval' => $this->option('exclude_day_from_interval'),
+            'exclude_dates' => $this->option('exclude_date'),
+            'exclude_days_of_the_month' => $this->option('exclude_day_of_the_month'),
+        ], [
+            'startdate' => ['required', 'date_format:d/m/Y'],
+            'enddate' => ['required', 'date_format:d/m/Y'],
+            'interval' => ['nullable', 'numeric', 'digits_between:1,4'],
+            'exclude_days.*' => ['numeric', 'in:0,1,2,3,4,5,6'], // 
+            'exclude_days_from_interval.*' => ['numeric', 'in:0,1,2,3,4,5,6'],
+            'exclude_dates.*' => ['date_format:d/m'],
+            'exclude_days_of_the_month.*' => ['numeric', 'between:1,31'],
+        ]);
+
+        if ($validator->fails()) {
+            $this->info('Daterange CSV not created. See following errors:');
+
+            foreach ($validator->errors()->all() as $error) {
+                $this->error($error);
+            }
+            return;
+        }
+
         $startdate = Carbon::createFromFormat('d/m/Y', $this->argument('startdate'));
         $enddate = Carbon::createFromFormat('d/m/Y', $this->argument('enddate'));
         $interval = (int)$this->option('interval');
