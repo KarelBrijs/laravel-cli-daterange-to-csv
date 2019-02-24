@@ -31,6 +31,8 @@ php artisan generate:daterange-csv [options] [--] <startdate> <enddate>
   --exclude_day_from_interval	The days that will be excluded from the interval count. Values from 0 (sunday) to 6 (saturday). **
   --exclude_date				The dates (dd/mm) that will be excluded from the results. **
   --exclude_day_of_the_month	The nth-days of each month that will be excluded from the results. **
+
+  ** = multiple values are allowed, just use the option again with a different value
 ```
 
 ##### Export:
